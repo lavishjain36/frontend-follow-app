@@ -1,120 +1,169 @@
-import React from 'react'
+import React, { useContext, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom';
+import {UserContext} from '../../App';
 const Home=()=> {
+  const [data,setData]=useState([])
+  const {state,dispatch}= useContext(UserContext)
+  useEffect(()=>{
+    fetch('/allpost',{
+      headers:{
+        "Authorization":"Bearer "+localStorage.getItem('jwt')
+      }
+    }).then(res=>res.json())
+    .then(result=>{
+      // console.log(result);
+      setData(result.posts)
+    })
+  })
+
+  const likePost=(id)=>{
+    fetch("/like",{
+      method:"put",
+      headers:{
+        "Content-Type": "application/json",
+        "Authorization":"Bearer " +localStorage.getItem("jwt")
+      },
+      body:JSON.stringify({
+        postId:id
+      })
+    }).then(res=>res.json())
+    .then(result=>{
+      // console.log(result)
+      //logic to update the value 
+      let newData=data.map(item=>{
+        if(item._id===result._id){
+          return result
+        }else{
+          return item
+        }
+      })
+      console.log(newData)
+      setData(newData)
+    }).catch((error)=>{
+      console.log(error)
+    })
+  }
+
+  const unlikePost=(id)=>{
+    fetch("/unlike",{
+      method:"put",
+      headers:{
+        "Content-Type": "application/json",
+        "Authorization":"Bearer "+localStorage.getItem("jwt")
+      },
+      body:JSON.stringify({
+        postId:id
+      })
+    }).then(res=>res.json())
+    .then(result=>{
+      // console.log(result)
+      let newData=data.map(item=>{
+        if(item._id===result._id){
+          return result
+        }else{
+          return item
+        }
+      })
+      console.log(newData)
+      setData(newData)
+    }).catch((error)=>{
+      console.log(error)
+    }) 
+  }
+
+  const makeComment=(text,postId)=>{
+    fetch('/comment',{
+      method:"put",
+      headers:{
+        "Content-Type": "application/json",
+        "Authorization": "Bearer "+localStorage.getItem("jwt")
+      },
+      body:JSON.stringify({
+        postId,
+        text
+      })
+    }).then(res=>res.json())
+    .then(result=>{
+     console.log(result)
+     const newData=data.map(item=>{
+      if(item._id===result._id){
+        return result
+      }else{
+        return item
+      }
+    })
+    // console.log(newData)  
+    setData(newData)
+    }).catch(err=>{
+      console.log(err)
+    })
+  }
+
+  const deletePost=(postid)=>{
+    fetch(`/deletepost/${postid}`,{
+      method:"delete",
+      headers:{
+        "Authorization": "Bearer "+localStorage.getItem("jwt")
+      }
+    }).then(res=>res.json())
+    .then((result)=>{
+      console.log(result)
+      const newData=data.filter(item=>{
+        return item._id!==result._id
+      })
+      setData(newData)
+    })
+  }
   return (
     <div className='home'>
-      <div className="card home-card">
-        <h5>Mahesh</h5>
+    {
+      data.map(item=>{
+        return(
+        <div className="card home-card" key={item._id}>
+        <h5 style={{padding:"5px"}}><Link to={item.postedBy._id===state._id?"/profile/"+item.postedBy._id:"/profile"}>{item.postedBy.name} </Link> {item.postedBy._id===state._id
+        && <i className="material-icons" style={{
+          float:"right"
+        }}
+        onClick={()=>deletePost(item._id)}
+        >delete</i> }
+        </h5>
         <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
+          <img src={item.photo} alt="image1"/>
         </div>
         <div className="card-content">
         <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
-        </div>
-      </div>
+        {item.likes.includes(state._id)
+         ?
+        <i class="material-icons"
+         onClick={()=>{unlikePost(item._id)}}>thumb_down</i>
+        :
+        <i class="material-icons"
+        onClick={()=>{likePost(item._id)}}>thumb_up</i>
+        }
+        <h6>{item.likes.length} Likes</h6>
+        <h6>{item.title}</h6>
+        <p>{item.body}</p>
+         {
+          item.comments.map(record=>{
+            return(
+              <h6 key={record._id}><span style={{fontWeight:500}}>{record.postedBy.name}</span>{record.text}</h6>
+            )
+          })
+         }
+         <form onSubmit={(e)=>{
+          e.preventDefault()
+          console.log(e.target[0].value)
+          makeComment(e.target[0].value,item._id)
 
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
+         }}>
+         <input type="text" placeholder="Add Comment"/>
+         </form>
         </div>
       </div>
+        )
+      })
+    }
       
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
-        </div>
-      </div>
-      
-
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
-        </div>
-      </div>
-      
-
-
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
-        </div>
-      </div>
-      
-
-
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
-        </div>
-      </div>
-      
-
-
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text" placeholder="Add Comment"/>
-        </div>
-      </div>
-      
-
-      <div className="card home-card">
-        <h5>Mahesh</h5>
-        <div className="card-image">
-          <img src="https://media.istockphoto.com/id/1138562953/photo/portrait-of-casual-smiling-man.jpg?b=1&s=170667a&w=0&k=20&c=McX08QhWIWGUODIsJ7uOg-zNBBKiWP9cCr9fyv2Jxys=" alt="men1"/>
-        </div>
-        <div className="card-content">
-        <i class="material-icons" style={{color:"red"}}>favorite</i>
-        <h6>Title</h6>
-        <p>This is best post</p>
-        <input type="text"  placeholder="Add Comment"/>
-        </div>
-      </div>
-      
-
     </div>
   )
 }

@@ -8,7 +8,7 @@ import Profile from './components/screens/Profile';
 import SignIn from './components/screens/SignIn';
 import Signup from './components/screens/Signup';
 import {reducer,initialState} from "./reducers/useReducers";
-
+import UserProfile from './components/screens/UserProfile';
 export const UserContext=createContext();
 
 const Routing=()=>{
@@ -20,7 +20,6 @@ const Routing=()=>{
     console.log(typeof user)
     if(user){
       dispatch({type:"USER",paylod:user});
-      navigate('/')
     }else{
       navigate('/signin')
     }
@@ -30,8 +29,9 @@ const Routing=()=>{
     <Route exact path="/" element={<Home />}></Route>
     <Route  path="/signup" element={<Signup />}></Route>
     <Route  path="/signin" element={<SignIn />}></Route>
-    <Route  path="/profile" element={<Profile />}></Route>
+    <Route exact path="/profile" element={<Profile />}></Route>
     <Route path="/create" element={<CreatePost/>}></Route>
+    <Route path="/profile/:userid" element={<UserProfile/>}></Route>
     </Routes>
   )
 }
